@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ששת ימי בראשית</title>
+<meta name="description" content="משחק לכל המשפחה: מה נברא בכל יום לפי ספר בראשית? 6 אפשרויות ו-45 שניות לכל יום.">
+<meta property="og:title" content="ששת ימי בראשית">
+<meta property="og:description" content="מה נברא בכל יום? משחק לכל המשפחה לפי בראשית א–ב.">
+<meta name="theme-color" content="#0e1424">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e1424'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' fill='%23f2c66d' font-family='serif' font-weight='bold'%3E%D7%90%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Assistant:wght@400;600;700&display=swap">
+<style>
+/* Layout: one column that moves from darkness to light — cards "above the waters", seven days below, each day a little brighter than the last. */
+:root {
+  --deep: #0e1424;        /* the deep, before light */
+  --deep-2: #161e33;      /* raised surface */
+  --deep-3: #202a45;      /* borders / wells */
+  --text: #ece6d6;        /* parchment text */
+  --muted: #9aa3ba;       /* secondary text */
+  --light: #f2c66d;       /* "let there be light" accent */
+  --light-ink: #1a1405;   /* text on accent */
+  --good: #7fd1a1;
+  --bad: #f08a7e;
+  --font-display: 'Frank Ruhl Libre', 'David', 'Times New Roman', serif;
+  --font-body: 'Assistant', 'Segoe UI', Arial, sans-serif;
+  --radius: 10px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--deep);
+  background-image: radial-gradient(ellipse 80% 45% at 50% -10%, rgba(242,198,109,.16), transparent 70%);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
+  min-height: 100vh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 24px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; margin: 0; text-wrap: balance; line-height: 1.15; }
+h1 { font-size: clamp(2.4rem, 7vw, 4rem); font-weight: 900; letter-spacing: -.01em; }
+h1 .glow { color: var(--light); text-shadow: 0 0 32px rgba(242,198,109,.45); }
+h2 { font-size: 1.6rem; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 60ch; }
+.verse { font-family: var(--font-display); font-size: 1.15rem; color: var(--text); }
+.ref { color: var(--muted); font-size: .85rem; }
+.eyebrow { font-size: .8rem; letter-spacing: .08em; color: var(--light); font-weight: 700; }
+
+.panel { background: var(--deep-2); border: 1px solid var(--deep-3); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.or { text-align: center; color: var(--muted); font-size: .9rem; }
+
+label { font-weight: 600; font-size: .95rem; }
+input {
+  font: inherit; color: var(--text); background: var(--deep); border: 1px solid var(--deep-3);
+  border-radius: 8px; padding: 12px 14px; width: 100%; min-width: 0;
+}
+input:focus-visible, button:focus-visible, .card:focus-visible { outline: 2px solid var(--light); outline-offset: 2px; }
+input.code { font-size: 1.6rem; letter-spacing: .4em; text-align: center; font-variant-numeric: tabular-nums; direction: ltr; }
+
+button {
+  font: inherit; font-weight: 700; cursor: pointer; border-radius: 8px; padding: 12px 20px;
+  border: 1px solid var(--deep-3); background: var(--deep-3); color: var(--text);
+  transition: transform .08s ease, background .15s ease, opacity .15s;
+}
+button:hover:not(:disabled) { background: #2b3759; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: var(--light); border-color: var(--light); color: var(--light-ink); }
+button.primary:hover:not(:disabled) { background: #f7d48a; }
+button.ghost { background: transparent; }
+button.block { width: 100%; }
+.error { color: var(--bad); font-weight: 600; }
+.error:empty { display: none; }
+
+/* Lobby */
+.roomcode { font-family: var(--font-display); font-size: clamp(3rem, 12vw, 5rem); font-weight: 900; color: var(--light); letter-spacing: .12em; direction: ltr; text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
+.players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.player { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 12px; background: var(--deep); border-radius: 8px; }
+.player .name { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.tag { font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--deep-3); color: var(--muted); white-space: nowrap; }
+.tag.me { background: rgba(242,198,109,.18); color: var(--light); }
+.tag.host { background: transparent; border: 1px solid var(--deep-3); }
+.tag.done { background: rgba(127,209,161,.16); color: var(--good); }
+.bar { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: var(--deep-3); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--light); border-radius: inherit; transition: width .4s ease; }
+
+/* Game */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(14,20,36,.92); backdrop-filter: blur(8px); border: 1px solid var(--deep-3); border-radius: var(--radius); flex-wrap: wrap; }
+.hud .stat { font-variant-numeric: tabular-nums; font-weight: 700; }
+.hud .stat small { color: var(--muted); font-weight: 400; }
+.hint { color: var(--muted); font-size: .95rem; }
+.hint b { color: var(--light); }
+
+.card {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; line-height: 1.3;
+  padding: 10px 14px; border-radius: 8px; background: var(--text); color: var(--deep);
+  border: 2px solid transparent; cursor: pointer; user-select: none; touch-action: manipulation;
+  box-shadow: 0 2px 0 rgba(0,0,0,.35);
+}
+.card:hover:not(:disabled) { background: #fff8e6; }
+.card.in:hover:not(:disabled) { background: #f7d48a; }
+.card.in { background: var(--light); color: var(--light-ink); }
+.card.in::after { content: ' ×'; opacity: .55; }
+
+.stepper { display: flex; gap: 4px; flex-wrap: nowrap; }
+.step {
+  width: 2.3rem; height: 2.3rem; padding: 0; border-radius: 50%; position: relative;
+  font-family: var(--font-display); font-size: 1rem; background: transparent; color: var(--muted); border: 1px solid var(--deep-3);
+}
+.step.has { color: var(--text); border-color: rgba(242,198,109,.5); }
+.step.has::after { content: ''; position: absolute; bottom: 3px; inset-inline: 0; margin: auto; width: 4px; height: 4px; border-radius: 50%; background: var(--light); }
+.step.current { background: var(--light); color: var(--light-ink); border-color: var(--light); }
+.step.current::after { background: var(--light-ink); }
+.step { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+.step.past { opacity: .5; }
+
+.clock { min-width: 5.5rem; }
+.clock .secs { font-family: var(--font-display); font-variant-numeric: tabular-nums; font-weight: 900; font-size: 1.6rem; line-height: 1; }
+.clock .secs small { color: var(--muted); font-weight: 400; font-size: .8rem; font-family: var(--font-body); }
+.hud .daybar { flex: 0 0 100%; order: 10; }
+.daybar { height: 6px; border-radius: 99px; background: var(--deep-3); overflow: hidden; }
+.daybar > i { display: block; height: 100%; width: 100%; background: var(--light); border-radius: inherit; transform-origin: right; transition: transform .5s linear, background .3s; }
+.clock.low .secs { color: var(--bad); }
+.hud.low .daybar > i { background: var(--bad); }
+@keyframes pulse { 50% { opacity: .55; } }
+.clock.low .secs { animation: pulse 1s steps(2) infinite; }
+
+.stage {
+  display: flex; flex-direction: column; gap: 18px; padding: 20px; border-radius: var(--radius); border: 1px solid var(--deep-3);
+  background: color-mix(in srgb, var(--light) calc(var(--n) * 2.5%), var(--deep-2));
+  scroll-margin-top: 90px;
+}
+.stage-head { display: flex; align-items: center; gap: 16px; }
+.big-num { font-family: var(--font-display); font-weight: 900; font-size: clamp(3rem, 10vw, 4.5rem); color: var(--light); line-height: .9; text-shadow: 0 0 28px rgba(242,198,109,.35); }
+.stage-head h2 { font-size: clamp(1.6rem, 5vw, 2.2rem); }
+.pick-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pick-count { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); }
+.pick-count b { color: var(--light); }
+.options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.options .card { min-height: 64px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; text-align: center; gap: 6px; padding: 12px 10px; }
+.options .card.in::after { content: none; }
+.options .card.in::before { content: '✓'; font-family: var(--font-body); }
+.options .card:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+.nav { justify-content: space-between; }
+.nav button { flex: 1 1 0; }
+.nav #next { flex: 2 1 0; }
+.others { display: flex; flex-direction: column; gap: 8px; }
+.others #finish { align-self: flex-start; font-size: .9rem; padding: 8px 14px; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: .85rem; padding: 4px 10px; border-radius: 99px; background: var(--deep-2); border: 1px solid var(--deep-3); color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip b { color: var(--text); font-weight: 600; }
+.chip.done { color: var(--good); }
+
+/* Review day blocks */
+.day {
+  display: flex; flex-direction: column; gap: 8px; padding: 12px;
+  border-radius: var(--radius); border: 1px solid var(--deep-3);
+  background: color-mix(in srgb, var(--light) calc(var(--n) * 2.2%), var(--deep-2));
+}
+.day header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.day .num { font-family: var(--font-display); font-weight: 900; font-size: 1.8rem; color: var(--light); line-height: 1; }
+.day .dname { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+
+/* Top bar inside a room */
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.topbar .brand { display: flex; flex-direction: column; gap: 2px; }
+.topbar .brand b { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; line-height: 1.2; }
+.topbar .brand span { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+button.linkbtn { background: none; border: 0; color: var(--muted); padding: 8px 4px; font-weight: 600; font-size: .9rem; }
+button.linkbtn:hover:not(:disabled) { background: none; color: var(--text); }
+button.linkbtn.warn { color: var(--bad); }
+
+/* Home entry */
+.entry { display: grid; grid-template-columns: 1fr auto 1fr; gap: 24px; }
+.entry .sep { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--muted); font-size: .9rem; }
+.entry .sep::before, .entry .sep::after { content: ''; flex: 1; width: 1px; background: var(--deep-3); }
+.modes { display: flex; flex-direction: column; gap: 16px; }
+.panel.solo { flex-direction: row; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.solo .txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 260px; }
+.solo button { flex: 1 1 200px; }
+@media (min-width: 641px) { .solo button { flex: 0 1 240px; } }
+.best { color: var(--light); font-weight: 700; font-variant-numeric: tabular-nums; }
+.choice { display: flex; flex-direction: column; gap: 10px; justify-content: space-between; }
+.choice h3 { font-size: 1.25rem; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 640px) {
+  .entry { grid-template-columns: 1fr; gap: 16px; }
+  .entry .sep { flex-direction: row; }
+  .entry .sep::before, .entry .sep::after { height: 1px; width: auto; }
+}
+
+/* How to play */
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 10px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 1.8rem 1fr; gap: 10px; align-items: baseline; }
+.steps li::before { content: counter(s); font-family: var(--font-display); font-weight: 900; color: var(--light); font-size: 1.2rem; text-align: center; }
+
+.evening { font-family: var(--font-display); color: var(--muted); font-size: 1rem; }
+
+/* Results */
+.split > .panel.board { align-self: start; }
+@media (min-width: 700px) { .split > .panel.board { position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); } }
+.score-hero { display: flex; flex-direction: column; gap: 6px; }
+.score-hero .big { font-family: var(--font-display); font-weight: 900; font-size: clamp(2.6rem, 9vw, 4rem); line-height: 1; }
+.score-hero .big .glow { color: var(--light); text-shadow: 0 0 32px rgba(242,198,109,.4); }
+.score-hero .big small { font-size: .45em; color: var(--muted); font-weight: 700; }
+.score-hero .meta { color: var(--muted); font-variant-numeric: tabular-nums; }
+.res { font-size: .8rem; font-weight: 700; padding: 1px 8px; border-radius: 99px; white-space: nowrap; font-family: var(--font-body); }
+.res.ok { background: rgba(127,209,161,.14); color: var(--good); }
+.res.no { background: rgba(240,138,126,.14); color: var(--bad); }
+
+.podium { display: flex; flex-direction: column; gap: 8px; }
+.rank { display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: 12px; padding: 12px 14px; background: var(--deep); border-radius: 8px; font-variant-numeric: tabular-nums; }
+.rank .pos { font-family: var(--font-display); font-weight: 900; font-size: 1.4rem; color: var(--muted); text-align: center; }
+.rank.first { background: rgba(242,198,109,.12); border: 1px solid rgba(242,198,109,.4); }
+.rank.first .pos { color: var(--light); }
+.rank .score { font-weight: 700; }
+.rank .score small { color: var(--muted); font-weight: 400; }
+.review { display: flex; flex-direction: column; gap: 10px; }
+.review .item { display: flex; flex-direction: column; gap: 2px; padding-block: 6px; border-top: 1px solid var(--deep-3); }
+.review .item:first-of-type { border-top: 0; }
+.review .item .what { font-weight: 700; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.mark-good { color: var(--good); }
+.mark-bad, .hint b.mark-bad { color: var(--bad); }
+
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); inset-inline: 16px; margin: 0 auto; max-width: 420px; background: var(--text); color: var(--deep); padding: 12px 16px; border-radius: 8px; font-weight: 700; text-align: center; z-index: 20; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (max-width: 480px) { body { font-size: 16px; } .hud { justify-content: center; } .hud .stat { flex: 1 1 auto; } .hud .stat:last-child { text-align: left; } .stepper { order: 3; width: 100%; justify-content: space-between; } .step { width: 2.4rem; height: 2.4rem; } .stage { padding: 16px; } }
+</style>
+</head>
+<body>
+<main class="wrap" id="app" aria-live="polite"></main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* גרסה סטטית (GitHub Pages): משחק יחיד בלבד. במקום שרת Flask, הלוגיקה של /genesis/api רצה כאן בדפדפן. */
+(function () {
+  var CARDS = [[1, "אור", 1, "ויאמר אלהים יהי אור ויהי אור", "בראשית א, ג"], [2, "הבדלה בין האור לחושך", 1, "ויבדל אלהים בין האור ובין החשך", "בראשית א, ד"], [3, "יום ולילה", 1, "ויקרא אלהים לאור יום ולחשך קרא לילה", "בראשית א, ה"], [4, "הרקיע", 2, "יהי רקיע בתוך המים", "בראשית א, ו"], [5, "הבדלה בין מים למים", 2, "ויהי מבדיל בין מים למים", "בראשית א, ו"], [6, "שמיים", 2, "ויקרא אלהים לרקיע שמים", "בראשית א, ח"], [7, "היבשה", 3, "יקוו המים מתחת השמים אל מקום אחד ותראה היבשה", "בראשית א, ט"], [8, "ימים", 3, "ולמקוה המים קרא ימים", "בראשית א, י"], [9, "דשא ועשב", 3, "תדשא הארץ דשא עשב מזריע זרע", "בראשית א, יא"], [10, "עץ פרי", 3, "עץ פרי עשה פרי למינו", "בראשית א, יא"], [11, "השמש", 4, "את המאור הגדל לממשלת היום", "בראשית א, טז"], [12, "הירח", 4, "ואת המאור הקטן לממשלת הלילה", "בראשית א, טז"], [13, "הכוכבים", 4, "ואת הכוכבים", "בראשית א, טז"], [14, "דגים ושרצי המים", 5, "ישרצו המים שרץ נפש חיה", "בראשית א, כ"], [15, "התנינים הגדולים", 5, "ויברא אלהים את התנינם הגדלים", "בראשית א, כא"], [16, "עוף השמיים", 5, "ועוף יעופף על הארץ על פני רקיע השמים", "בראשית א, כ"], [17, "חיות היבשה", 6, "תוצא הארץ נפש חיה למינה", "בראשית א, כד"], [18, "בהמה ורמש", 6, "בהמה ורמש וחיתו ארץ למינה", "בראשית א, כד"], [19, "האדם", 6, "ויברא אלהים את האדם בצלמו", "בראשית א, כז"], [20, "מנוחה", 7, "וישבת ביום השביעי מכל מלאכתו אשר עשה", "בראשית ב, ב"], [21, "ברכת היום וקדושתו", 7, "ויברך אלהים את יום השביעי ויקדש אתו", "בראשית ב, ג"]];
+  var BOTS = [['סבתא רחל', 0.8, 2600], ['יואב', 0.6, 1700]];
+  var room = null, players = [], now = function () { return Date.now() / 1000; };
+  function tok() { return Math.random().toString(36).slice(2); }
+  function shuffle(seed) { var a = CARDS.map(function (c) { return c[0]; }), s = seed;
+    for (var i = a.length - 1; i > 0; i--) { s = (s * 9301 + 49297) % 233280; var j = Math.floor(s / 233280 * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a.map(function (id) { return { id: id, label: byId(id)[1] }; }); }
+  var PICKS = {}; [1,2,3,4,5,6,7].forEach(function (d) { PICKS[d] = CARDS.filter(function (c) { return c[2] === d; }).length; });
+  function rng(seed) { var s = seed; return function () { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
+  function dayOptions(seed) { var r = rng(seed), out = {};
+    for (var d = 1; d <= 7; d++) {
+      var ok = CARDS.filter(function (c) { return c[2] === d; }).map(function (c) { return c[0]; });
+      var other = CARDS.filter(function (c) { return c[2] !== d; }).map(function (c) { return c[0]; });
+      for (var i = other.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)); var t = other[i]; other[i] = other[j]; other[j] = t; }
+      var ids = ok.concat(other.slice(0, 6 - ok.length));
+      for (i = ids.length - 1; i > 0; i--) { j = Math.floor(r() * (i + 1)); t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
+      out[d] = ids.map(function (id) { return { id: id, label: byId(id)[1] }; }); }
+    return out; }
+  function byId(id) { return CARDS.filter(function (c) { return c[0] === id; })[0]; }
+  function add(name, token, bot) { var p = { name: name, token: token, joined: now(), round: 0, progress: 0, submitted: null, correct: null, elapsed: null, answers: null, bot: bot }; players.push(p); return p; }
+  function maybeFinish() { if (room.status === 'playing' && !players.some(function (p) { return p.round === room.round && !p.submitted; })) room.status = 'done'; }
+  function submitP(p, answers) { var c = 0, n = 0; Object.keys(answers).forEach(function (d) { answers[d].forEach(function (id) { n++; if (byId(id)[2] === +d) c++; }); });
+    p.submitted = now(); p.correct = c; p.elapsed = p.submitted - room.startedAt; p.answers = answers; p.progress = n; maybeFinish(); }
+  function runBot(p, acc, speed) { var r = room.round, opts = dayOptions(room.seed), placed = {}, d = 1;
+    (function step() { if (room.round !== r || room.status !== 'playing' || p.submitted) return;
+      if (d > 7) return submitP(p, placed);
+      var good = opts[d].filter(function (o) { return byId(o.id)[2] === d; }), bad = opts[d].filter(function (o) { return byId(o.id)[2] !== d; });
+      placed[d] = []; for (var k = 0; k < PICKS[d]; k++) { var pool = Math.random() < acc ? good : bad; var o = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; if (o) placed[d].push(o.id); }
+      p.progress += placed[d].length; d++; setTimeout(step, speed * PICKS[d - 1] * (0.6 + Math.random())); })(); }
+  function state(token) {
+    var me = players.filter(function (p) { return p.token === token; })[0];
+    var inRound = me.round === room.round && room.status !== 'lobby';
+    var s = { code: room.code, status: room.status, round: room.round, isHost: token === room.host, solo: !!room.solo, inRound: inRound, total: CARDS.length, serverNow: now(), startedAt: room.startedAt, daySeconds: 45,
+      players: players.map(function (p) { var pl = p.round === room.round && room.status !== 'lobby';
+        return { name: p.name, isHost: p.token === room.host, isMe: p.token === token, playing: pl, progress: pl ? p.progress : 0, submitted: !!(pl && p.submitted),
+          correct: pl && p.submitted ? p.correct : null, elapsed: pl && p.elapsed != null ? Math.round(p.elapsed * 10) / 10 : null }; }) };
+    if (inRound) { s.days = dayOptions(room.seed); s.picks = PICKS; }
+    if (inRound && me.submitted) s.myAnswers = me.answers;
+    if (room.status === 'done' || (inRound && me.submitted)) s.key = CARDS.map(function (c) { return { id: c[0], label: c[1], day: c[2], verse: c[3], ref: c[4] }; });
+    return s; }
+  function handle(method, path, body) {
+    var m;
+    if (method === 'POST' && path === '/rooms') {
+      if (body.solo) { var st = tok(); room = { code: 's' + tok(), host: st, status: 'playing', round: 1, seed: Math.floor(Math.random() * 1e6), startedAt: now(), solo: true };
+        players = []; var me = add(body.name || 'אני', st, false); me.round = 1; return [200, { code: room.code, token: st }]; }
+      if (!body.name) return [400, { error: 'כתבו שם כדי להיכנס למשחק' }];
+      var t = tok(); room = { code: String(1000 + Math.floor(Math.random() * 9000)), host: t, status: 'lobby', round: 0, seed: 1, startedAt: null };
+      players = []; add(body.name, t, false);
+      BOTS.forEach(function (b, i) { setTimeout(function () { if (room && room.status === 'lobby') add(b[0], tok(), b); }, 1200 + i * 1500); });
+      return [200, { code: room.code, token: t }]; }
+    if ((m = path.match(/^\/rooms\/(\d+)\/join$/))) return [404, { error: 'בגרסת ההדגמה אפשר רק לפתוח חדר. הצטרפות מטלפון נוסף תעבוד אחרי העלייה ל-Render' }];
+    if (!room || !(m = path.match(/^\/rooms\/(\w+?)(\/\w+)?(\?|$)/)) || m[1] !== room.code) return [404, { error: 'החדר לא קיים' }];
+    var token = method === 'GET' ? decodeURIComponent((path.split('token=')[1] || '')) : body.token;
+    var me = players.filter(function (p) { return p.token === token; })[0];
+    if (!me) return [403, { error: 'אינך רשום בחדר הזה' }];
+    var act = m[2] ? m[2].split('?')[0] : '';
+    if (method === 'GET') return [200, state(token)];
+    if (act === '/start') { room.round++; room.status = 'playing'; room.seed = Math.floor(Math.random() * 1e6); room.startedAt = now();
+      players.forEach(function (p) { p.round = room.round; p.progress = 0; p.submitted = null; p.correct = null; p.elapsed = null; p.answers = null; if (p.bot) runBot(p, p.bot[1], p.bot[2]); });
+      return [200, { ok: true }]; }
+    if (act === '/finish') { if (room.status === 'playing') room.status = 'done'; return [200, { ok: true }]; }
+    if (act === '/progress') { if (!me.submitted) me.progress = body.placed; return [200, { ok: true }]; }
+    if (act === '/submit') { if (me.submitted) return [409, { error: 'כבר הגשתם' }]; var a = {}; Object.keys(body.answers || {}).forEach(function (d) { a[d] = (body.answers[d] || []).slice(0, PICKS[d]); }); submitP(me, a); return [200, { ok: true }]; }
+    return [404, { error: 'לא נמצא' }]; }
+  var realFetch = window.fetch;
+  window.fetch = function (url, opts) {
+    if (typeof url === 'string' && url.indexOf('/genesis/api') === 0) {
+      var r = handle((opts && opts.method) || 'GET', url.slice('/genesis/api'.length), opts && opts.body ? JSON.parse(opts.body) : {});
+      return Promise.resolve(new Response(JSON.stringify(r[1]), { status: r[0], headers: { 'Content-Type': 'application/json' } })); }
+    return realFetch.apply(this, arguments); };
+  try { history.replaceState = function () {}; } catch (e) {}
+  try { localStorage.removeItem('genesis-game'); } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+
+  var DAY_NAMES = ['יום אחד', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום השישי', 'היום השביעי'];
+  var DAY_NUMS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳'];
+  // סיום כל יום בלשון הפסוק (בראשית א); ביום השביעי אין "ויהי ערב"
+  var EVENINGS = ['ויהי ערב ויהי בקר יום אחד', 'ויהי ערב ויהי בקר יום שני', 'ויהי ערב ויהי בקר יום שלישי',
+    'ויהי ערב ויהי בקר יום רביעי', 'ויהי ערב ויהי בקר יום חמישי', 'ויהי ערב ויהי בקר יום הששי', 'ויכלו השמים והארץ וכל צבאם'];
+  var STORE_KEY = 'genesis-game';
+  var POLL_MS = 1500;
+
+  var app = document.getElementById('app');
+  var toastEl = document.getElementById('toast');
+
+  var session = loadSession();          // {code, token}
+  var state = null;                      // last server state
+  var clockOffset = 0;                   // serverNow - localNow (seconds)
+  var board = {};                        // day -> [cardId] (local, current round)
+  var boardRound = null;
+  var currentDay = 1;                    // היום המוצג במסך המשחק
+  var dayStart = 0;                      // מתי התחיל היום הנוכחי (שעון השרת, שניות)
+  var DAY_SECONDS = 45;                  // מגיע מהשרת (daySeconds)
+  var pollTimer = null, tickTimer = null, progressTimer = null;
+  var lastRenderKey = '';
+  var busy = false;
+
+  // ── storage ──────────────────────────────────────────────
+  function loadSession() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function saveSession(s) {
+    session = s;
+    try { s ? localStorage.setItem(STORE_KEY, JSON.stringify(s)) : localStorage.removeItem(STORE_KEY); } catch (e) {}
+  }
+  function boardKey() { return STORE_KEY + ':board:' + (session && session.code) + ':' + boardRound; }
+  function saveBoard() { try { localStorage.setItem(boardKey(), JSON.stringify(board)); } catch (e) {} }
+  function loadBoard() {
+    try {
+      var b = JSON.parse(localStorage.getItem(boardKey()) || '{}') || {};
+      return Object.keys(b).every(function (k) { return Array.isArray(b[k]); }) ? b : {};
+    } catch (e) { return {}; }
+  }
+  // היום הנוכחי ותחילתו נשמרים כדי שרענון הדף לא יאפס את השעון
+  function saveClock() { try { localStorage.setItem(boardKey() + ':clock', JSON.stringify({ day: currentDay, start: dayStart })); } catch (e) {} }
+  function loadClock() { try { return JSON.parse(localStorage.getItem(boardKey() + ':clock') || 'null'); } catch (e) { return null; } }
+  function serverNow() { return Date.now() / 1000 + clockOffset; }
+
+  // ── helpers ──────────────────────────────────────────────
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function api(method, path, body) {
+    var opts = { method: method, credentials: 'same-origin', headers: {} };
+    if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+    return fetch('/genesis/api' + path, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (!r.ok) { var err = new Error(data.error || 'שגיאת תקשורת, נסו שוב'); err.status = r.status; throw err; }
+        return data;
+      });
+    });
+  }
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(function () { toastEl.hidden = true; }, 2200);
+  }
+  function fmtTime(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  }
+  function loadBest() { try { return JSON.parse(localStorage.getItem(STORE_KEY + ':best') || 'null'); } catch (e) { return null; } }
+  function saveBest(b) { try { localStorage.setItem(STORE_KEY + ':best', JSON.stringify(b)); } catch (e) {} }
+  function better(a, b) { return !b || a.correct > b.correct || (a.correct === b.correct && a.elapsed < b.elapsed); }
+  var newBestRound = null, hadBestBefore = false;
+  function placedCount() { return Object.keys(board).reduce(function (n, d) { return n + board[d].length; }, 0); }
+  function picksOf(d) { return board[d] || []; }
+  function joinLink(code) { return location.origin + '/genesis?room=' + code; }
+
+  // ── polling ──────────────────────────────────────────────
+  function startPolling() {
+    stopPolling();
+    poll();
+    pollTimer = setInterval(poll, POLL_MS);
+  }
+  function stopPolling() { clearInterval(pollTimer); pollTimer = null; }
+
+  function poll() {
+    if (!session) return;
+    api('GET', '/rooms/' + session.code + '?token=' + encodeURIComponent(session.token))
+      .then(function (s) {
+        clockOffset = s.serverNow - Date.now() / 1000;
+        if (s.daySeconds) DAY_SECONDS = s.daySeconds;
+        if (s.inRound && s.round !== boardRound) {
+          boardRound = s.round; board = loadBoard();
+          var clk = loadClock();
+          currentDay = clk ? clk.day : 1; dayStart = clk ? clk.start : s.startedAt;
+        }
+        state = s;
+        render();
+      })
+      .catch(function (e) {
+        if (e.status === 404 || e.status === 403) {
+          saveSession(null); state = null; stopPolling();
+          renderHome(e.message);
+        }
+      });
+  }
+
+  function reportProgress() {
+    clearTimeout(progressTimer);
+    progressTimer = setTimeout(function () {
+      if (!session) return;
+      api('POST', '/rooms/' + session.code + '/progress', { token: session.token, placed: placedCount() }).catch(function () {});
+    }, 300);
+  }
+
+  // ── render dispatcher ────────────────────────────────────
+  function render() {
+    if (!state) return;
+    var me = state.players.filter(function (p) { return p.isMe; })[0] || {};
+    var view;
+    if (state.status === 'lobby') view = 'lobby';
+    else if (!state.inRound) view = 'waiting';
+    else if (state.status === 'playing' && !me.submitted) view = 'play';
+    else view = 'results';
+
+    if (view === 'play') {
+      // בזמן משחק מרנדרים מחדש את הלוח רק כשהוא עצמו משתנה, כדי לא לשבור גרירה/בחירה
+      var key = 'play:' + state.round;
+      if (lastRenderKey !== key) { lastRenderKey = key; renderPlay(); }
+      else { renderPlayers(document.getElementById('live-players'), 'compact'); }
+      return;
+    }
+    // לא מרנדרים מחדש אם שום דבר לא השתנה — שומר על מצב כפתורי אישור ועל סימון טקסט
+    var sig = JSON.parse(JSON.stringify(state)); delete sig.serverNow;
+    var key2 = view + ':' + JSON.stringify(sig);
+    if (lastRenderKey === key2) return;
+    lastRenderKey = key2;
+    if (view === 'lobby') renderLobby();
+    else if (view === 'waiting') renderWaiting();
+    else renderResults();
+  }
+
+  // ── home ─────────────────────────────────────────────────
+  function renderHome(errorMsg) {
+    lastRenderKey = 'home';
+    var params = new URLSearchParams(location.search);
+    var preCode = (params.get('room') || '').replace(/\D/g, '').slice(0, 4);
+    var best = loadBest();
+    app.innerHTML =
+      '<header style="display:flex;flex-direction:column;gap:12px">' +
+        '<span class="eyebrow">משחק לכל המשפחה · בראשית א–ב</span>' +
+        '<h1>ששת ימי <span class="glow">בראשית</span></h1>' +
+        '<p class="lede">בשישה ימים נברא העולם, וביום השביעי שבת. זוכרים מה נברא בכל יום? ' +
+        'בכל יום בוחרים מתוך 6 אפשרויות מה נברא בו, ויש 45 שניות. כמה תצליחו לדייק?</p>' +
+      '</header>' +
+      '<div class="modes">' +
+      '<section class="panel solo">' +
+        '<div class="txt"><h2>מוכנים?</h2>' +
+        '<p class="hint">7 ימים, 45 שניות לכל יום. בלי הרשמה, מתחילים מיד.</p>' +
+        (best ? '<span class="best">השיא שלכם: ' + best.correct + ' מתוך 21 · ' + fmtTime(best.elapsed) + '</span>' : '') + '</div>' +
+        '<button class="' + (preCode ? '' : 'primary ') + 'block" id="solo">להתחיל לשחק</button>' +
+      '</section>' +
+      '<section class="panel" hidden>' +
+        '<div style="display:flex;flex-direction:column;gap:4px"><h2>משחק קבוצתי</h2>' +
+        '<p class="hint">עד 10 משתתפים, כל אחד מהטלפון שלו, עם טבלת מנצחים משותפת.</p></div>' +
+        '<div class="field"><label for="name">השם שלכם במשחק</label>' +
+        '<input id="name" maxlength="20" autocomplete="nickname" placeholder="למשל: סבתא רחל"></div>' +
+        '<div class="entry">' +
+          '<div class="choice">' +
+            '<h3>מארחים משחק</h3>' +
+            '<p class="hint">פותחים חדר ומקבלים קוד לשלוח לכל המשתתפים.</p>' +
+            '<button class="' + (preCode ? 'ghost ' : '') + 'block" id="create">פתיחת חדר</button>' +
+          '</div>' +
+          '<div class="sep" aria-hidden="true">או</div>' +
+          '<div class="choice">' +
+            '<h3>קיבלתם קוד?</h3>' +
+            '<label for="code" class="hint" style="font-weight:400">קוד החדר, 4 ספרות</label>' +
+            '<input id="code" class="code" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="····" value="' + esc(preCode) + '">' +
+            '<button class="' + (preCode ? 'primary ' : '') + 'block" id="join">הצטרפות לחדר</button>' +
+          '</div>' +
+        '</div>' +
+        '<p class="error" id="err" role="alert">' + esc(errorMsg || '') + '</p>' +
+      '</section></div>' + howTo();
+
+    var nameEl = document.getElementById('name');
+    var codeEl = document.getElementById('code');
+    try { nameEl.value = localStorage.getItem(STORE_KEY + ':name') || ''; } catch (e) {}
+    if (preCode) (nameEl.value ? document.getElementById('join') : nameEl).focus();
+
+    function getName() {
+      var n = nameEl.value.trim();
+      if (!n) { showErr('כתבו שם כדי שהמשתתפים האחרים יזהו אתכם'); nameEl.focus(); return null; }
+      try { localStorage.setItem(STORE_KEY + ':name', n); } catch (e) {}
+      return n;
+    }
+    function showErr(m) { document.getElementById('err').textContent = m; }
+
+    document.getElementById('solo').onclick = function () {
+      if (busy) return; busy = true;
+      var n = nameEl.value.trim();
+      api('POST', '/rooms', { name: n, solo: true })
+        .then(function (r) { saveSession({ code: r.code, token: r.token }); history.replaceState(null, '', '/genesis'); startPolling(); })
+        .catch(function (e) { showErr(e.message); })
+        .then(function () { busy = false; });
+    };
+    document.getElementById('create').onclick = function () {
+      var n = getName(); if (!n || busy) return;
+      busy = true;
+      api('POST', '/rooms', { name: n })
+        .then(function (r) { saveSession({ code: r.code, token: r.token }); history.replaceState(null, '', '/genesis?room=' + r.code); startPolling(); })
+        .catch(function (e) { showErr(e.message); })
+        .then(function () { busy = false; });
+    };
+    function doJoin() {
+      var n = getName(); if (!n || busy) return;
+      var c = codeEl.value.replace(/\D/g, '');
+      if (c.length !== 4) { showErr('קוד החדר צריך להיות 4 ספרות'); codeEl.focus(); return; }
+      busy = true;
+      api('POST', '/rooms/' + c + '/join', { name: n })
+        .then(function (r) { saveSession({ code: r.code, token: r.token }); history.replaceState(null, '', '/genesis?room=' + r.code); startPolling(); })
+        .catch(function (e) { showErr(e.message); })
+        .then(function () { busy = false; });
+    }
+    document.getElementById('join').onclick = doJoin;
+    codeEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') doJoin(); });
+    codeEl.addEventListener('input', function () { codeEl.value = codeEl.value.replace(/\D/g, '').slice(0, 4); });
+  }
+
+  // ── shared bits ──────────────────────────────────────────
+  function roomHeader() {
+    return '<header class="topbar">' +
+      '<div class="brand"><b>ששת ימי בראשית</b><span>' + (state.solo ? 'משחק יחיד' : 'חדר ' + esc(state.code)) + (state.round ? ' · סבב ' + state.round : '') + '</span></div>' +
+      '<button class="linkbtn" id="leave">' + leaveLabel() + '</button>' +
+    '</header>';
+  }
+  function leaveLabel() { return state && state.solo ? 'למסך הראשי' : 'יציאה מהחדר'; }
+  function bindLeave() {
+    var b = document.getElementById('leave');
+    if (!b) return;
+    b.onclick = function () {
+      var needConfirm = !(state && state.solo && state.status !== 'playing');
+      if (needConfirm && b.dataset.confirm !== '1') {
+        b.dataset.confirm = '1'; b.textContent = 'לחצו שוב ליציאה'; b.classList.add('warn');
+        setTimeout(function () { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = leaveLabel(); b.classList.remove('warn'); } }, 3000);
+        return;
+      }
+      stopPolling(); saveSession(null); state = null; history.replaceState(null, '', '/genesis'); renderHome();
+    };
+  }
+
+  function renderPlayers(el, mode) {
+    if (!el) return;
+    if (mode === 'compact') {
+      el.innerHTML = state.players.filter(function (p) { return !p.isMe; }).map(function (p) {
+        var v = !p.playing ? 'בסבב הבא' : p.submitted ? 'סיים ✓' : p.progress + '/' + state.total;
+        return '<li class="chip' + (p.submitted ? ' done' : '') + '"><b>' + esc(p.name) + '</b> ' + v + '</li>';
+      }).join('') || '<li class="hint">אתם משחקים לבד בסבב הזה</li>';
+      return;
+    }
+    el.innerHTML = state.players.map(function (p) {
+      var tags = '';
+      if (p.isHost) tags += '<span class="tag host">מארח</span> ';
+      if (p.isMe) tags += '<span class="tag me">אני</span> ';
+      if (mode === 'play') {
+        if (!p.playing) tags += '<span class="tag">משחק בסבב הבא</span>';
+        else if (p.submitted) tags += '<span class="tag done">סיים</span>';
+        else tags += '<span class="tag">' + p.progress + '/' + state.total + '</span>';
+      }
+      var bar = mode === 'play' && p.playing
+        ? '<div class="bar" aria-hidden="true"><i style="width:' + (p.submitted ? 100 : Math.round(p.progress / state.total * 100)) + '%"></i></div>' : '';
+      return '<li class="player"><span class="name">' + esc(p.name) + '</span><span>' + tags + '</span>' + bar + '</li>';
+    }).join('');
+  }
+
+  // ── lobby ────────────────────────────────────────────────
+  function renderLobby() {
+    var n = state.players.length;
+    app.innerHTML = roomHeader() +
+      '<section class="split">' +
+        '<div class="panel" style="align-items:center;text-align:center">' +
+          '<span class="eyebrow">קוד החדר</span>' +
+          '<div class="roomcode">' + esc(state.code) + '</div>' +
+          '<p class="hint">שלחו את הקוד למשתתפים, או את הקישור הזה:</p>' +
+          '<div class="row" style="width:100%;flex-wrap:nowrap"><input id="link" readonly value="' + esc(joinLink(state.code)) + '" style="direction:ltr;font-size:.9rem"><button id="copy">העתקת קישור</button></div>' +
+        '</div>' +
+        '<div class="panel">' +
+          '<h2>מי כבר כאן <small class="ref">' + n + ' מתוך 10</small></h2>' +
+          '<ul class="players" id="players"></ul>' +
+          (state.isHost
+            ? '<button class="primary block" id="start">' + (n < 2 ? 'להתחיל לבד' : 'להתחיל את המשחק') + '</button>'
+            : '<p class="hint">המשחק יתחיל כשהמארח ילחץ על "להתחיל".</p>') +
+          (state.isHost && n < 2 ? '<p class="hint">אפשר גם לחכות שעוד משתתפים יצטרפו. הם יופיעו כאן.</p>' : '') +
+        '</div>' +
+      '</section>' +
+      howTo();
+    renderPlayers(document.getElementById('players'), 'lobby');
+    bindLeave();
+    document.getElementById('copy').onclick = function () {
+      var input = document.getElementById('link');
+      var done = function () { toast('הקישור הועתק. אפשר להדביק בוואטסאפ'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(input.value).then(done, function () { input.select(); toast('הקישור מסומן. העתיקו אותו ידנית'); });
+      } else { input.select(); toast('הקישור מסומן. העתיקו אותו ידנית'); }
+    };
+    var start = document.getElementById('start');
+    if (start) start.onclick = startRound;
+  }
+
+  function howTo() {
+    return '<section class="panel"><h2>איך משחקים</h2><ol class="steps">' +
+      '<li><span>עוברים על הימים לפי הסדר, מיום אחד ועד היום השביעי. לכל יום יש <b>45 שניות</b>. כשהזמן נגמר עוברים אוטומטית ליום הבא, ואין חזרה אחורה.</span></li>' +
+      '<li><span>בכל יום מופיעות 6 אפשרויות. בוחרים את אלה שנבראו באותו יום, והמשחק אומר כמה לבחור. לחיצה נוספת מבטלת בחירה.</span></li>' +
+      '<li><span>סיימתם יום לפני הזמן? לוחצים על <b>סיימתי</b> וממשיכים. בסוף רואים כמה צדקתם ומה השיא האישי שלכם.</span></li>' +
+      '</ol><p class="hint">התשובות והפסוקים מספר בראשית נחשפים אחרי ההגשה.</p></section>';
+  }
+
+  function startRound() {
+    if (busy) return; busy = true;
+    api('POST', '/rooms/' + state.code + '/start', { token: session.token })
+      .then(poll).catch(function (e) { toast(e.message); })
+      .then(function () { busy = false; });
+  }
+
+  // ── waiting (joined mid-round) ───────────────────────────
+  function renderWaiting() {
+    app.innerHTML = roomHeader() +
+      '<section class="panel"><h2>הסבב כבר התחיל</h2><p>תשחקו מהסבב הבא. בינתיים אפשר לראות איך מתקדמים האחרים.</p>' +
+      '<ul class="players" id="live-players"></ul></section>';
+    renderPlayers(document.getElementById('live-players'), 'play');
+    bindLeave();
+  }
+
+  // ── play ─────────────────────────────────────────────────
+  function renderPlay() {
+    app.innerHTML = roomHeader() +
+      '<div class="hud">' +
+        '<div class="clock" id="clock"><span class="secs" id="timer" role="timer">45 <small>שניות</small></span></div>' +
+        '<nav class="stepper" id="stepper" aria-label="ימי הבריאה"></nav>' +
+        '<span class="stat"><span id="count">0</span>/' + state.total + ' <small>בחירות</small></span>' +
+        '<div class="daybar" aria-hidden="true"><i id="daybar"></i></div>' +
+      '</div>' +
+      '<section class="stage" id="stage"></section>' +
+      '<section class="row nav">' +
+        '<button class="primary" id="next">יום הבא ←</button>' +
+      '</section>' +
+      (state.solo ? '' :
+      '<section class="others"><span class="eyebrow">איפה האחרים</span><ul class="chips" id="live-players"></ul>' +
+        (state.isHost ? '<button class="ghost" id="finish">סיום הסבב לכולם</button>' : '') +
+      '</section>');
+    bindLeave();
+    renderPlayers(document.getElementById('live-players'), 'compact');
+
+    document.getElementById('stage').addEventListener('click', function (e) {
+      var card = e.target.closest('.card'); if (!card) return;
+      toggle(+card.dataset.id);
+    });
+    document.getElementById('next').onclick = function () {
+      var next = this, max = state.picks[currentDay], n = picksOf(currentDay).length;
+      if (n < max && next.dataset.confirm !== '1') {
+        next.dataset.confirm = '1';
+        next.textContent = (n === 0 ? 'לא בחרתם כלום' : 'בחרתם רק ' + n) + '. ' + (currentDay < 7 ? 'להמשיך בכל זאת?' : 'להגיש בכל זאת?');
+        return;
+      }
+      if (currentDay < 7) nextDay(serverNow()); else submitBoard(true);
+    };
+    var fin = document.getElementById('finish');
+    if (fin) fin.onclick = function () {
+      if (fin.dataset.confirm !== '1') { fin.dataset.confirm = '1'; fin.textContent = 'לסיים לכולם? לחצו שוב'; return; }
+      api('POST', '/rooms/' + state.code + '/finish', { token: session.token }).then(poll).catch(function (e) { toast(e.message); });
+    };
+
+    clearInterval(tickTimer);
+    drawBoard();
+    tickTimer = setInterval(tick, 250); tick();
+  }
+
+  // מעבר קדימה בלבד: ליום הבא אין חזרה, כדי שמגבלת הזמן תהיה אמיתית
+  function nextDay(startAt) {
+    if (currentDay >= 7) return;
+    currentDay++; dayStart = startAt; saveClock();
+    drawBoard();
+    var st = document.getElementById('stage');
+    if (st && st.getBoundingClientRect().top < 0) st.scrollIntoView({ block: 'start' });
+  }
+
+  function cardHtml(c, extraClass) {
+    return '<button type="button" class="card ' + (extraClass || '') + '" data-id="' + c.id + '">' + esc(c.label) + '</button>';
+  }
+
+  function drawBoard() {
+    var stage = document.getElementById('stage');
+    if (!stage) return;
+    var d = currentDay;
+    var max = state.picks[d];
+    var mine = picksOf(d);
+    var full = mine.length >= max;
+
+    stage.style.setProperty('--n', d);
+    stage.innerHTML =
+      '<header class="stage-head">' +
+        '<span class="big-num">' + DAY_NUMS[d - 1] + '</span>' +
+        '<div><h2>' + DAY_NAMES[d - 1] + '</h2><p class="evening">״' + EVENINGS[d - 1] + '״</p></div>' +
+      '</header>' +
+      '<div class="pick-head">' +
+        '<span class="hint">' + (d === 7 ? 'מה היה ביום השביעי?' : 'מה נברא ביום הזה?') + ' בחרו ' + max + '</span>' +
+        '<span class="pick-count"><b>' + mine.length + '</b> מתוך ' + max + '</span>' +
+      '</div>' +
+      '<div class="options">' +
+        state.days[d].map(function (c) {
+          var on = mine.indexOf(c.id) !== -1;
+          return '<button type="button" class="card' + (on ? ' in' : '') + '" data-id="' + c.id + '" aria-pressed="' + on + '"' +
+            (full && !on ? ' disabled' : '') + '>' + esc(c.label) + '</button>';
+        }).join('') +
+      '</div>';
+
+    document.getElementById('stepper').innerHTML = DAY_NUMS.map(function (n, i) {
+      var k = picksOf(i + 1).length;
+      return '<span class="step' + (i + 1 === d ? ' current' : i + 1 < d ? ' past' : '') + (k ? ' has' : '') + '"' +
+        ' aria-label="' + DAY_NAMES[i] + (k ? ', נבחרו ' + k : '') + '"' + (i + 1 === d ? ' aria-current="step"' : '') + '>' + n + '</span>';
+    }).join('');
+
+    document.getElementById('count').textContent = placedCount();
+    var next = document.getElementById('next');
+    var label = d < 7 ? 'ל' + DAY_NAMES[d] + ' ←' : 'הגשה';
+    next.dataset.confirm = '';
+    next.textContent = full ? (d < 7 ? 'סיימתי, ' + label : 'הגשה') : (d < 7 ? 'דילוג ' + label : 'הגשה');
+  }
+
+  function toggle(id) {
+    var d = currentDay, max = state.picks[d];
+    var mine = picksOf(d).slice();
+    var i = mine.indexOf(id);
+    if (i !== -1) mine.splice(i, 1);
+    else if (mine.length < max) mine.push(id);
+    else return;
+    board[d] = mine;
+    saveBoard(); drawBoard(); reportProgress();
+  }
+
+  function tick() {
+    var el = document.getElementById('timer');
+    if (!el || !state || !state.startedAt) { clearInterval(tickTimer); return; }
+    var now = serverNow();
+    // אם עבר זמן (למשל אחרי רענון או מסך כבוי) מדלגים על כל הימים שזמנם נגמר
+    while (now >= dayStart + DAY_SECONDS) {
+      if (currentDay >= 7) { clearInterval(tickTimer); toast('הזמן נגמר. התשובות נשלחו'); submitBoard(true); return; }
+      toast('הזמן של ' + DAY_NAMES[currentDay - 1] + ' נגמר');
+      nextDay(dayStart + DAY_SECONDS);
+    }
+    var left = Math.max(0, dayStart + DAY_SECONDS - now);
+    el.innerHTML = Math.ceil(left) + ' <small>שניות</small>';
+    document.getElementById('daybar').style.transform = 'scaleX(' + (left / DAY_SECONDS) + ')';
+    document.getElementById('clock').classList.toggle('low', left <= 10);
+    document.querySelector('.hud').classList.toggle('low', left <= 10);
+  }
+
+  function submitBoard(force) {
+    var sub = document.getElementById('next');
+    if (busy) { if (force) setTimeout(function () { submitBoard(true); }, 300); return; }
+    busy = true; sub.disabled = true; clearInterval(tickTimer);
+    api('POST', '/rooms/' + state.code + '/submit', { token: session.token, answers: board })
+      .then(function () { clearInterval(tickTimer); lastRenderKey = ''; poll(); })
+      .catch(function (e) { toast(e.message); sub.disabled = false; })
+      .then(function () { busy = false; });
+  }
+
+  // ── results ──────────────────────────────────────────────
+  function renderResults() {
+    clearInterval(tickTimer);
+    var me = state.players.filter(function (p) { return p.isMe; })[0] || {};
+    var ranked = state.players.filter(function (p) { return p.playing && p.submitted; })
+      .sort(function (a, b) { return (b.correct - a.correct) || (a.elapsed - b.elapsed); });
+    var pending = state.players.filter(function (p) { return p.playing && !p.submitted; });
+    var done = state.status === 'done';
+
+    if (state.solo) return renderSoloResults(me);
+    var myPos = ranked.indexOf(ranked.filter(function (p) { return p.isMe; })[0]) + 1;
+    var others = state.players.filter(function (p) { return p.playing; }).length > 1;
+    var headline = me.submitted
+      ? '<div class="score-hero"><span class="eyebrow">' + (done && others ? 'מקום ' + myPos + ' מתוך ' + ranked.length : 'התוצאה שלכם') + '</span>' +
+        '<div class="big"><span class="glow">' + me.correct + '</span> <small>מתוך ' + state.total + ' נכונים</small></div>' +
+        '<p class="verse">' + verdict(me.correct, state.total) + '</p>' +
+        '<span class="meta">זמן: ' + fmtTime(me.elapsed) + '</span></div>'
+      : '<div class="score-hero"><span class="eyebrow">סבב ' + state.round + '</span><div class="big">הסבב הסתיים</div>' +
+        '<p class="lede">הסבב נסגר לפני שהגשתם. אפשר לראות למטה את התשובות.</p></div>';
+
+    app.innerHTML = roomHeader() +
+      headline +
+      '<section class="split">' +
+        '<div class="panel board"><h2>' + (done ? 'טבלת המנצחים' : 'בינתיים בטבלה') + '</h2>' +
+          '<div class="podium">' + ranked.map(function (p, i) {
+            return '<div class="rank' + (i === 0 && done ? ' first' : '') + '"><span class="pos">' + (i + 1) + '</span>' +
+              '<span class="name" style="font-weight:700;min-width:0;overflow-wrap:anywhere">' + esc(p.name) + (p.isMe ? ' <span class="tag me">אני</span>' : '') + '</span>' +
+              '<span class="score">' + p.correct + ' <small>נכונים · ' + fmtTime(p.elapsed) + '</small></span></div>';
+          }).join('') + '</div>' +
+          (pending.length ? '<p class="hint">עדיין משחקים: ' + pending.map(function (p) { return esc(p.name) + ' (' + p.progress + '/' + state.total + ')'; }).join(', ') + '</p>' : '') +
+          (state.isHost
+            ? '<div class="row">' +
+                (done ? '<button class="primary block" id="again">סבב נוסף עם אותם משתתפים</button>'
+                      : '<button class="ghost block" id="finish">סיום הסבב לכולם</button>') +
+              '</div>'
+            : (done ? '<p class="hint">הסבב הבא יתחיל כשהמארח יפתח אותו.</p>' : '')) +
+        '</div>' +
+        '<div class="panel"><h2>התשובות מבראשית</h2><div class="review" id="review"></div></div>' +
+      '</section>';
+    bindLeave();
+
+    var again = document.getElementById('again'); if (again) again.onclick = startRound;
+    var fin = document.getElementById('finish');
+    if (fin) fin.onclick = function () {
+      if (fin.dataset.confirm !== '1') { fin.dataset.confirm = '1'; fin.textContent = 'לסיים לכולם? לחצו שוב'; return; }
+      api('POST', '/rooms/' + state.code + '/finish', { token: session.token }).then(poll).catch(function (e) { toast(e.message); });
+    };
+    renderReview(document.getElementById('review'));
+  }
+
+  function renderSoloResults(me) {
+    var prev = loadBest();
+    if (me.submitted && newBestRound !== state.round && better(me, prev)) { hadBestBefore = !!prev; saveBest({ correct: me.correct, elapsed: me.elapsed }); newBestRound = state.round; }
+    var best = loadBest();
+    var isNew = newBestRound === state.round;
+    app.innerHTML = roomHeader() +
+      (me.submitted
+        ? '<div class="score-hero"><span class="eyebrow">' + (isNew ? (hadBestBefore ? 'שיא אישי חדש!' : 'התוצאה הראשונה שלכם') : 'סבב ' + state.round) + '</span>' +
+          '<div class="big"><span class="glow">' + me.correct + '</span> <small>מתוך ' + state.total + ' נכונים</small></div>' +
+          '<p class="verse">' + verdict(me.correct, state.total) + '</p>' +
+          '<span class="meta">זמן: ' + fmtTime(me.elapsed) + (best && !isNew ? ' · השיא שלכם: ' + best.correct + ' נכונים, ' + fmtTime(best.elapsed) : '') + '</span></div>'
+        : '<div class="score-hero"><div class="big">הזמן נגמר</div></div>') +
+      '<section class="row"><button class="primary" id="again" style="flex:1 1 220px">לשחק שוב</button>' +
+        '<button class="ghost" id="home" style="flex:1 1 160px">למסך הראשי</button></section>' +
+      '<section class="panel"><h2>התשובות מבראשית</h2><div class="review" id="review"></div></section>';
+    bindLeave();
+    document.getElementById('again').onclick = startRound;
+    document.getElementById('home').onclick = function () { stopPolling(); saveSession(null); state = null; renderHome(); };
+    renderReview(document.getElementById('review'));
+  }
+
+  function verdict(c, t) {
+    if (c === t) return '״וירא אלהים את כל אשר עשה והנה טוב מאד״. מושלם!';
+    if (c >= t - 3) return 'כמעט מושלם. בדקו למטה איפה התבלבלתם.';
+    if (c >= t / 2) return 'יפה מאוד. התשובות המלאות מחכות למטה.';
+    return 'זו הזדמנות טובה לקרוא יחד את פרק א׳ בבראשית.';
+  }
+
+  function renderReview(el) {
+    if (!el || !state.key) { if (el) el.innerHTML = '<p class="hint">התשובות ייחשפו כשהסבב ייגמר.</p>'; return; }
+    var mine = state.myAnswers;
+    var byId = {}; state.key.forEach(function (k) { byId[k.id] = k; });
+    el.innerHTML = DAY_NAMES.map(function (name, i) {
+      var d = i + 1;
+      var picks = mine ? (mine[d] || []) : [];
+      var items = state.key.filter(function (k) { return k.day === d; });
+      var wrong = picks.filter(function (id) { return byId[id] && byId[id].day !== d; });
+      return '<div class="day" style="--n:' + d + ';min-height:0">' +
+        '<header><span class="dname">' + name + '</span><span class="num">' + DAY_NUMS[i] + '</span></header>' +
+        items.map(function (k) {
+          var mark = !mine ? '' : picks.indexOf(k.id) !== -1
+            ? '<span class="res ok">✓ בחרתם</span>'
+            : '<span class="res no">פספסתם</span>';
+          return '<div class="item"><span class="what">' + esc(k.label) + ' ' + mark + '</span>' +
+            '<span class="verse">״' + esc(k.verse) + '״</span><span class="ref">' + esc(k.ref) + '</span></div>';
+        }).join('') +
+        (wrong.length ? '<p class="hint">בחרתם גם: ' + wrong.map(function (id) {
+          return '<b class="mark-bad">' + esc(byId[id].label) + '</b> (שייך ליום ' + DAY_NUMS[byId[id].day - 1] + ')';
+        }).join(', ') + '</p>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  // ── boot ─────────────────────────────────────────────────
+  var urlRoom = new URLSearchParams(location.search).get('room');
+  if (session && urlRoom && urlRoom !== session.code) saveSession(null);
+  if (session) startPolling(); else renderHome();
+})();
+</script>
+</body>
+</html>
